@@ -1,0 +1,49 @@
+<script>
+    export let type = "closed";
+    export let cost = 0;
+    let displayCost = false;
+    let displayPath = false;
+
+    if (!displayPath && type === "path") {
+        type = "open";
+    }
+</script>
+
+<div class="grid-element {type}">
+    {#if displayCost && cost > -1}
+        {cost}
+    {:else if type === "start"}
+        S
+    {:else if type === "goal"}
+        G
+    {/if}
+</div>
+
+<style>
+    .grid-element {
+        width: 20px;
+        height: 20px;
+        border: 1px solid black;
+    }
+    .closed {
+        background-color: gray;
+        border-color: gray;
+    }
+    .open {
+        background-color: white;
+        border: 1px solid white;
+        color: black;
+    }
+    .goal {
+        background-color: rgb(20, 20, 80);
+        border-color: rgb(20, 20, 80);
+    }
+    .start {
+        background-color: rgb(46, 102, 46);
+        border-color: rgb(46, 102, 46);
+    }
+    .path {
+        background-color: rgb(255, 139, 139);
+        border-color: rgb(255, 139, 139);
+    }
+</style>
