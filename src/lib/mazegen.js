@@ -1,3 +1,4 @@
+
 class Position {
     /**
      * @param {number} x
@@ -38,6 +39,8 @@ export class Maze {
         explore: 'explore', //direct but avoid existing open areas
 
     }
+
+
     /**
      * 
      * @param {number} min 
@@ -67,15 +70,145 @@ export class Maze {
         }
 
     }
+    /**
+     * @param {Position} position
+     */
+    #getNeighbours(position) {
 
+        let neighbours = [];
+        //all 4 neighbours
+        neighbours.push(new Position(position.x + 1, position.y));
+        neighbours.push(new Position(position.x - 1, position.y));
+        neighbours.push(new Position(position.x, position.y + 1));
+        neighbours.push(new Position(position.x, position.y - 1));
+
+        neighbours = neighbours.filter((neighbour) => {
+            return this.#isPositionWithinBounds(neighbour);
+        })
+        return neighbours;
+
+    }
+    /**
+     * 
+     * @param {Position} goal 
+     * @param {string} opacity 
+     */
+    #calculateCosts(goal, opacity = Maze.opacity.open) {
+        let costs = [];
+        for (let x = 0; x < this.maze.length; x++) {
+            let row = this.maze[x];
+            costs.push([]);
+            for (let y = 0; y < row.length; y++) {
+                costs[x][y] = NaN;
+            }
+        }
+        //Cost of goal is 0
+        costs[goal.x][goal.y] = 0;
+
+        let iterations = costs.length * costs[0].length;
+        //iterations = 10;
+        let previousHighest = -1;
+        for (let i = 0; i < iterations; i++) {
+            //Find highest cost
+            let highest = Math.max(...costs.flat(2).filter((x) => !isNaN(x)));
+            //No new paths in last iteration, break
+            if (highest === previousHighest) {
+                break;
+            }
+            //Find all instances of the highest cost
+            let instances = [];
+            for (let x = 0; x < costs.length; x++) {
+                for (let y = 0; y < costs[x].length; y++) {
+                    if (costs[x][y] === highest) {
+                        instances.push(new Position(x, y));
+                    }
+                }
+            }
+            console.log('highest', highest);
+            //console.log('instances', instances);
+
+            //For all instances, find all neighbouring tiles that can be traversed
+            for (let index = 0; index < instances.length; index++) {
+                let instance = instances[index];
+                let neightbours = this.#getNeighbours(instance)
+
+                //filter neighbours to remove invalid types 
+                neightbours = neightbours.filter((neighbour) => {
+                    return (this.maze[neighbour.x][neighbour.y].opacity === opacity || [Maze.tileTypes.start, Maze.tileTypes.goal, Maze.tileTypes.room, , Maze.tileTypes.roomCenter].indexOf(this.maze[neighbour.x][neighbour.y].type) > -1) &&
+                        isNaN(costs[neighbour.x][neighbour.y]);
+                })
+
+                neightbours.map((neighbour) => {
+                    costs[neighbour.x][neighbour.y] = highest + 1;
+                })
+            }
+            previousHighest = highest;
+
+
+        }
+
+        for (let x = 0; x < this.maze.length; x++) {
+            let row = this.maze[x];
+            costs.push([]);
+            for (let y = 0; y < row.length; y++) {
+                this.maze[x][y].cost = costs[x][y]
+            }
+        }
+        return (costs);
+
+    }
+
+
+    /**
+     * 
+     * @param {Array} costs 
+     * @param {Position} startPos 
+     */
+    #findPath(costs, startPos) {
+        //Find shortest path
+        let path = [];
+        for (let i = 0; i < costs.length * costs[0].length; i++) {
+            //start with start position
+            if (!path.length) {
+                path.push(startPos);
+            }
+
+            //Find cheapest neighbour tile
+            let currentPos = path[path.length - 1];
+            let nextPos;
+
+            if (costs[currentPos.x][currentPos.y] == 0) {
+                console.log("Solved!", path.length);
+                break;
+            }
+            let neighbours = this.#getNeighbours(currentPos);
+            //Find costs and sort by lowest
+            let neighbourCost = neighbours.map((neighbour) => { return { position: new Position(neighbour.x, neighbour.y), cost: costs[neighbour.x][neighbour.y] } }).sort((a, b) => { return a.cost - b.cost });
+
+            nextPos = neighbourCost[0].position;
+
+
+            path.push(nextPos);
+        }
+        return (path);
+    }
     /**
      * Checks if x and y are within the bounds of this maze, keeping the outermost perimeter as out of bounds
      * @param {number} x
      * @param {number} y
      * @returns True if within bounds
      */
-    isWithinBounds(x, y) {
+    #isWithinBounds(x, y) {
         return x > 0 && x < this.height - 1 && y > 0 && y < this.width - 1
+    }
+
+    /**
+     * Checks if x and y are within the bounds of this maze, keeping the outermost perimeter as out of bounds
+     * @param {Position} position
+     * @returns True if within bounds
+     */
+    #isPositionWithinBounds(position) {
+        return this.#isWithinBounds(position.x, position.y)
     }
 
     getRandomPositionWithinBounds() {
@@ -93,7 +226,7 @@ export class Maze {
     generateNoise() {
         for (let x = 0; x < this.height; x++) {
             for (let y = 0; y < this.width; y++) {
-                if (this.isWithinBounds(x, y)) {
+                if (this.#isWithinBounds(x, y)) {
                     if (Math.random() > 0.5) {
                         this.maze[x][y] = new Tile(Maze.opacity.open);
                     }
@@ -123,7 +256,7 @@ export class Maze {
                 height = Maze.getRandomInteger(minRoomSize, maxRoomSize);
 
                 if (this.maze[upperLeftCorner.x][upperLeftCorner.y].opacity === Maze.opacity.closed &&
-                    this.isWithinBounds(upperLeftCorner.x + height, upperLeftCorner.y + height)
+                    this.#isWithinBounds(upperLeftCorner.x + height, upperLeftCorner.y + height)
                 ) {
                     break;
                 }
@@ -145,7 +278,7 @@ export class Maze {
             room.height = height;
             room.width = width;
             if (includeHallways && index > 0) {
-                this.generateHallway(this.rooms[index - 1].center, room.center);
+                this.generateHallway(this.rooms[index - 1].center, room.center, Maze.hallwayTypes.meandering);
             }
 
             this.rooms.push(room);
@@ -160,7 +293,7 @@ export class Maze {
      */
     assignPosition(position, tile) {
         tile = structuredClone(tile);
-        if (this.isWithinBounds(position.x, position.y)) {
+        if (this.#isWithinBounds(position.x, position.y)) {
             //check that tile type is not overwritten when generating hallways or nonetype
             if (tile.type === Maze.tileTypes.none || (tile.type === Maze.tileTypes.hallway && this.maze[position.x][position.y].type != Maze.tileTypes.none)) {
                 tile.type = this.maze[position.x][position.y].type;
@@ -245,7 +378,7 @@ export class Maze {
                 else {
                     newPosition.x = newPosition.x - 1;
                 }
-                if (!this.isWithinBounds(newPosition.x, newPosition.y)) {
+                if (!this.#isWithinBounds(newPosition.x, newPosition.y)) {
                     break;
                 }
                 if (this.maze[newPosition.x][newPosition.y].opacity === Maze.opacity.open) {
@@ -263,7 +396,7 @@ export class Maze {
                 else {
                     newPosition.y = newPosition.y - 1;
                 }
-                if (!this.isWithinBounds(newPosition.x, newPosition.y)) {
+                if (!this.#isWithinBounds(newPosition.x, newPosition.y)) {
                     break;
                 }
                 if (this.maze[newPosition.x][newPosition.y].opacity === Maze.opacity.open) {
@@ -275,6 +408,7 @@ export class Maze {
 
         return newPosition;
     }
+
     /**
      * 
      * @param {Position} startPos 
@@ -285,10 +419,14 @@ export class Maze {
 
         let currentPos = structuredClone(startPos)
         let prevDirection;
-
+        let costs = this.#calculateCosts(stopPos, Maze.opacity.closed);
 
         //Go directly to the position
         if (type === Maze.hallwayTypes.direct) {
+
+
+
+
 
             let distances = this.findDistance(startPos, stopPos);
 
@@ -306,15 +444,23 @@ export class Maze {
 
 
 
+
         }
         else if (type === Maze.hallwayTypes.meandering) {
+
+            let path = this.#findPath(costs, startPos);
+            console.log(`Cost of start position is ${costs[startPos.x][startPos.y]}`)
+            for (let index = 1; index < path.length - 1; index++) {
+                this.assignPosition(path[index], new Tile(Maze.opacity.open, Maze.tileTypes.hallway))
+            }
+
             /*
             Better meander algorithm:
             Give tiles value
             go to lower value or not based on random chance, 
             prefer closed tiles
-            
-            */
+
+            *//*
             for (let index = 0; index < 100; index++) {
                 let distances = this.findDistance(currentPos, stopPos);
                 let potentialDirections = ['right', 'left', 'down', 'up']
@@ -401,23 +547,23 @@ export class Maze {
 
                 currentPos = this.assignArea(currentPos, nextPos, new Tile(Maze.opacity.open, Maze.tileTypes.hallway))
 
-
-
-
-                /*
-                
-                    if (direction === "l" || direction === "r") {
-                        distance =
-                            Math.abs(Math.round(Math.random() * deltaY * 0.5)) + 1;
-                    }
-        
-                    if (direction === "d" || direction === "u") {
-                        distance =
-                            Math.abs(Math.round(Math.random() * deltaX * 0.5)) + 1;
-                    }
-                
                 */
-            }
+
+
+            /*
+            
+                if (direction === "l" || direction === "r") {
+                    distance =
+                        Math.abs(Math.round(Math.random() * deltaY * 0.5)) + 1;
+                }
+    
+                if (direction === "d" || direction === "u") {
+                    distance =
+                        Math.abs(Math.round(Math.random() * deltaX * 0.5)) + 1;
+                }
+            
+            
+        }*/
 
 
         }
