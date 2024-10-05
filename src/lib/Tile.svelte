@@ -1,21 +1,27 @@
 <script>
-    export let type = "closed";
-    export let cost = 0;
+    import { Tile } from "./mazegen.js";
+    export let tile = new Tile();
+
     let displayCost = false;
     let displayPath = false;
-
+    /*
     if (!displayPath && type === "path") {
         type = "open";
     }
+        */
 </script>
 
-<div class="grid-element {type}">
-    {#if displayCost && cost > -1}
-        {cost}
-    {:else if type === "start"}
+<div class="grid-element {tile.opacity}">
+    {#if displayCost && tile.cost > -1}
+        {tile.cost}
+    {:else if tile.type === "start"}
         S
-    {:else if type === "goal"}
+    {:else if tile.type === "goal"}
         G
+    {:else if tile.type === "roomCenter"}
+        C
+    {:else}
+        {tile.type.charAt(0)}
     {/if}
 </div>
 
@@ -27,11 +33,11 @@
     }
     .closed {
         background-color: gray;
-        border-color: gray;
+        /*border-color: gray;*/
     }
     .open {
         background-color: white;
-        border: 1px solid white;
+        /*border: 1px solid white;*/
         color: black;
     }
     .goal {
