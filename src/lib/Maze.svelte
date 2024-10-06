@@ -6,14 +6,13 @@
 
     let mazeObject = new Maze(38, 85);
     mazeObject.generateRooms(5);
-    /*mazeObject.generateStartAndGoal();
-    mazeObject.generateHallway(
+    //   mazeObject.generateStartAndGoal();
+    /*mazeObject.generateHallway(
         mazeObject.start,
         mazeObject.goal,
         Maze.hallwayTypes.meandering,
     );
-    */
-
+*/
     //console.log(mazeObject.maze);
     //console.log(mazeObject.rooms);
 </script>
