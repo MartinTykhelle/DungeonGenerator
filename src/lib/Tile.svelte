@@ -20,8 +20,6 @@
         G
     {:else if tile.type === "roomCenter"}
         C
-    {:else}
-        {tile.type.charAt(0)}
     {/if}
 </div>
 

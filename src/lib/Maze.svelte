@@ -5,7 +5,7 @@
     import { Maze } from "./mazegen.js";
 
     let mazeObject = new Maze(38, 85);
-    mazeObject.generateRooms(5);
+    mazeObject.generateRooms(10);
     //   mazeObject.generateStartAndGoal();
     /*mazeObject.generateHallway(
         mazeObject.start,

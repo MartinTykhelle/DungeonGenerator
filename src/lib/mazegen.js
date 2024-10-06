@@ -178,7 +178,7 @@ export class Maze {
                 }
                 else {
                     // Position in room is outside of bounds
-                    room.badness = room.badness + 10;
+                    room.badness = room.badness + 1000;
                 }
 
 
@@ -525,7 +525,9 @@ export class Maze {
             this.#assignPosition(room.center, new Tile(Maze.opacity.open, Maze.tileTypes.roomCenter))
 
             if (includeHallways && index > 0) {
+
                 this.generateHallway(this.rooms[index - 1].center, room.center, Maze.hallwayTypes.meandering);
+
             }
 
             this.rooms.push(room);
