@@ -1,5 +1,5 @@
 <script>
-    import { Tile } from "./mazegen.js";
+    import { Tile } from './mazegen.js';
     export let tile = new Tile();
 
     let displayCost = false;
@@ -12,13 +12,13 @@
 </script>
 
 <div class="grid-element {tile.opacity}">
-    {#if displayCost && tile.cost > -1}
+    {#if displayCost && !isNaN(tile.cost)}
         {tile.cost}
-    {:else if tile.type === "start"}
+    {:else if tile.type === 'start'}
         S
-    {:else if tile.type === "goal"}
+    {:else if tile.type === 'goal'}
         G
-    {:else if tile.type === "roomCenter"}
+    {:else if tile.type === 'roomCenter'}
         C
     {/if}
 </div>
