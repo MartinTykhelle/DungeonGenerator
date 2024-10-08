@@ -4,8 +4,8 @@
     import Tile from "./Tile.svelte";
     import { Maze } from "./mazegen.js";
 
-    let mazeObject = new Maze(38, 85);
-    mazeObject.generateRooms(10);
+    let mazeObject = new Maze(35, 35);
+    mazeObject.generateRooms(2);
     //   mazeObject.generateStartAndGoal();
     /*mazeObject.generateHallway(
         mazeObject.start,
