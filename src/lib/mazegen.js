@@ -204,7 +204,7 @@ export class Maze {
 
                 neighbours.map((neighbour) => {
                     if ([Maze.tileTypes.hallway, Maze.tileTypes.room, Maze.tileTypes.roomCenter].indexOf(this.maze[neighbour.x][neighbour.y].type) > -1) {
-                        extraCost = hallwayCost;
+                        extraCost = 0;
                     }
 
                     costs[neighbour.x][neighbour.y] = highest + 1 + extraCost;
@@ -244,8 +244,7 @@ export class Maze {
         let convolutedCosts = Array(this.height)
             .fill(0)
             .map(() => Array(this.width).fill(0));
-        let factor = kernel.flat(2).length;
-        console.log(factor);
+
         //What follows is convolutionesque, the kernel will be the room and the "center" is the top left position
         //Each point in the cost matrix will be calculated based on this room size
         for (let x = 0; x < costs.length; x++) {
@@ -272,7 +271,7 @@ export class Maze {
      * @param {number} meanderFactor in percentage, 0 means no meandering, 100 will only meander and never find the goal.
      * @returns {Array.<Position>} Array of positions describing the whole path
      */
-    #findPath(costs, startPos, meanderFactor = 0) {
+    #findPath(costs, startPos, meanderFactor = 0, straighHallways = true) {
         //Find shortest path
         let path = [];
         let meanderCounter = 0;
@@ -343,7 +342,7 @@ export class Maze {
             if (costs[currentPos.x][currentPos.y] == 0) {
                 break;
             }
-            //todo: filter existing paths
+
             let neighbours = this.#getNeighbours(currentPos);
 
             //Find costs and sort by lowest
@@ -355,7 +354,13 @@ export class Maze {
                     return a.cost - b.cost;
                 });
 
-            nextPos = neighbourCost[0].position;
+            // select random from low cost position
+            let cheapNeighbours = neighbourCost.filter((neighbour) => neighbour.cost === neighbourCost[0].cost);
+            if (!straighHallways || Maze.getRandomInteger(1, 100) > 80) {
+                nextPos = cheapNeighbours[Math.floor(Math.random() * cheapNeighbours.length)].position;
+            } else {
+                nextPos = cheapNeighbours[0].position;
+            }
 
             /*
             The following checks if a path is going back and forth between two spaces and tries to undo the damage
@@ -374,6 +379,7 @@ export class Maze {
                 path.push(nextPos);
             }
         }
+        console.log(path);
         return path;
     }
     /**
@@ -400,7 +406,6 @@ export class Maze {
      * @returns {Position} Random position within bounds
      */
     #getRandomPositionWithinBounds() {
-        //todo: Add preferOpenArea(width, height) or something to avoid overlapping points
         let x = Maze.getRandomInteger(1, this.height - 2);
         let y = Maze.getRandomInteger(1, this.width - 2);
         return new Position(x, y);
@@ -490,7 +495,7 @@ export class Maze {
      * @param {number} minRoomSize Minimum room size
      * @param {number} maxRoomSize Maximum room size
      */
-    generateRooms(numRooms, includeHallways = true, minRoomSize = 3, maxRoomSize = 3) {
+    generateRooms(numRooms, includeHallways = true, minRoomSize = 3, maxRoomSize = 12) {
         for (let index = 0; index <= numRooms - 1; index++) {
             let roomCosts = this.#calculateRoomCosts();
 

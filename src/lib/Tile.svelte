@@ -1,7 +1,6 @@
 <script>
     import { Tile } from './mazegen.js';
 
-    import { Tooltip } from '@svelte-plugins/tooltips';
     export let tile = new Tile();
 
     let displayCost = true;
@@ -15,19 +14,17 @@
         */
 </script>
 
-<Tooltip content="{x},{y}" position="top">
-    <div class="grid-element {tile.opacity}">
-        {#if displayCost && !isNaN(tile.cost)}
-            {tile.cost}
-        {:else if tile.type === 'start'}
-            S
-        {:else if tile.type === 'goal'}
-            G
-        {:else if tile.type === 'roomCenter'}
-            C
-        {/if}
-    </div>
-</Tooltip>
+<div class="grid-element {tile.opacity}" title="{x},{y} cost ={tile.cost}">
+    {#if tile.type === 'goal'}
+        G
+    {:else if tile.type === 'start'}
+        S
+    {:else if displayCost && !isNaN(tile.cost)}
+        {tile.cost}
+    {:else if tile.type === 'roomCenter'}
+        C
+    {/if}
+</div>
 
 <style>
     .grid-element {
