@@ -29,6 +29,7 @@ class Room {
         this.center = new Position(Math.floor(topLeftCorner.x + height / 2), Math.floor(topLeftCorner.y + width / 2));
         this.bottomRightCorner = new Position(topLeftCorner.x + height, topLeftCorner.y + width);
         this.badness = 0;
+        this.connected = false;
     }
 }
 export class Tile {
@@ -151,7 +152,7 @@ export class Maze {
      * @param {string} opacity Opacity of what should be traverse
      * @returns {Array.<Array>} Cost matrix
      */
-    #calculateCosts(goal, opacity = Maze.opacity.open) {
+    #calculateCosts(goal, opacity = Maze.opacity.open, hallwayCost = 0) {
         let costs = [];
         for (let x = 0; x < this.maze.length; x++) {
             let row = this.maze[x];
@@ -203,9 +204,11 @@ export class Maze {
 
                 neighbours.map((neighbour) => {
                     if ([Maze.tileTypes.hallway, Maze.tileTypes.room, Maze.tileTypes.roomCenter].indexOf(this.maze[neighbour.x][neighbour.y].type) > -1) {
-                        extraCost = 1;
+                        extraCost = hallwayCost;
                     }
+
                     costs[neighbour.x][neighbour.y] = highest + 1 + extraCost;
+                    this.maze[neighbour.x][neighbour.y].cost = costs[neighbour.x][neighbour.y];
                 });
             }
             previousHighest = highest;
@@ -220,22 +223,17 @@ export class Maze {
             .map(() => Array(this.width).fill(0));
         for (let x = 0; x < costs.length; x++) {
             for (let y = 0; y < costs[0].length; y++) {
-                if (this.#isWithinBounds(x, y)) {
-                    if (this.maze[x][y].opacity === Maze.opacity.open) {
-                        costs[x][y] += 1;
-                    }
-                    if (this.maze[x][y].type === Maze.tileTypes.room) {
-                        costs[x][y] += 3;
-                    }
-                    if (this.maze[x][y].type === Maze.tileTypes.hallway) {
-                        costs[x][y] += 0;
-                    }
-                    if (this.maze[x][y].type === Maze.tileTypes.roomCenter) {
-                        costs[x][y] += 10;
-                    }
-                } else {
-                    // outside of bounds
-                    costs[x][y] = 1000;
+                if (this.maze[x][y].opacity === Maze.opacity.open) {
+                    costs[x][y] += 1;
+                }
+                if (this.maze[x][y].type === Maze.tileTypes.room) {
+                    costs[x][y] += 3;
+                }
+                if (this.maze[x][y].type === Maze.tileTypes.hallway) {
+                    costs[x][y] += -1;
+                }
+                if (this.maze[x][y].type === Maze.tileTypes.roomCenter) {
+                    costs[x][y] += 10;
                 }
             }
         }
@@ -246,7 +244,8 @@ export class Maze {
         let convolutedCosts = Array(this.height)
             .fill(0)
             .map(() => Array(this.width).fill(0));
-
+        let factor = kernel.flat(2).length;
+        console.log(factor);
         //What follows is convolutionesque, the kernel will be the room and the "center" is the top left position
         //Each point in the cost matrix will be calculated based on this room size
         for (let x = 0; x < costs.length; x++) {
@@ -262,11 +261,7 @@ export class Maze {
             }
         }
         //normalize costs
-        for (let x = 0; x < convolutedCosts.length; x++) {
-            for (let y = 0; y < convolutedCosts[0].length; y++) {
-                convolutedCosts[x][y] = convolutedCosts[x][y] / kernel.flat(2).length;
-            }
-        }
+
         return convolutedCosts;
     }
 
@@ -348,7 +343,9 @@ export class Maze {
             if (costs[currentPos.x][currentPos.y] == 0) {
                 break;
             }
+            //todo: filter existing paths
             let neighbours = this.#getNeighbours(currentPos);
+
             //Find costs and sort by lowest
             let neighbourCost = neighbours
                 .map((neighbour) => {
@@ -404,8 +401,8 @@ export class Maze {
      */
     #getRandomPositionWithinBounds() {
         //todo: Add preferOpenArea(width, height) or something to avoid overlapping points
-        let x = Math.min(Math.max(Math.floor(Math.random() * this.height), 2), this.height - 2);
-        let y = Math.min(Math.max(Math.floor(Math.random() * this.width), 2), this.width - 2);
+        let x = Maze.getRandomInteger(1, this.height - 2);
+        let y = Maze.getRandomInteger(1, this.width - 2);
         return new Position(x, y);
     }
 
@@ -424,6 +421,10 @@ export class Maze {
             //start and goal should never be overwritten
             if (this.maze[position.x][position.y].type === Maze.tileTypes.start || this.maze[position.x][position.y].type === Maze.tileTypes.goal) {
                 tile.type = this.maze[position.x][position.y].type;
+            }
+            //avoid overwriting cost as well
+            if (this.maze[position.x][position.y].cost > 0 && tile.cost == 0) {
+                tile.cost = this.maze[position.x][position.y].cost;
             }
             this.maze[position.x][position.y] = tile;
         }
@@ -489,7 +490,7 @@ export class Maze {
      * @param {number} minRoomSize Minimum room size
      * @param {number} maxRoomSize Maximum room size
      */
-    generateRooms(numRooms, includeHallways = true, minRoomSize = 3, maxRoomSize = 15) {
+    generateRooms(numRooms, includeHallways = true, minRoomSize = 3, maxRoomSize = 3) {
         for (let index = 0; index <= numRooms - 1; index++) {
             let roomCosts = this.#calculateRoomCosts();
 
@@ -497,54 +498,65 @@ export class Maze {
             let height = Maze.getRandomInteger(minRoomSize, maxRoomSize);
             let width = Maze.getRandomInteger(minRoomSize, maxRoomSize);
 
+            //Make a kernel the size of the room
             for (let x = 0; x < height; x++) {
                 roomKernel.push([]);
                 for (let y = 0; y < width; y++) {
-                    roomKernel[x][y] = 1;
+                    roomKernel[x][y] = 2;
                 }
             }
             roomCosts = this.#calculateCostsKernel(roomCosts, roomKernel);
-            let minCost = 0;
-            let maxCost = 0;
-            let potentialValues = roomCosts.flat(2).filter((x) => {
-                return x >= minCost && x <= maxCost;
-            });
 
-            //no good places, just place wherever
-            if (potentialValues.length === 0) {
-                potentialValues = roomCosts.flat(2);
-            }
-
-            let targetCost = potentialValues[Math.floor(Math.random() * potentialValues.length)];
-
-            console.log(`targetCost = ${targetCost}`);
             let potentialRoomPositions = [];
-            for (let x = 0; x < this.height; x++) {
-                for (let y = 0; y < this.width; y++) {
-                    if (roomCosts[x][y] === targetCost) {
-                        potentialRoomPositions.push(new Position(x, y));
-                    }
+
+            for (let x = 1; x < this.height - height; x++) {
+                for (let y = 1; y < this.width - width; y++) {
+                    potentialRoomPositions.push({ position: new Position(x, y), cost: roomCosts[x][y] });
                 }
             }
-            let roomPosition = potentialRoomPositions[Math.floor(Math.random() * potentialRoomPositions.length)];
 
-            let room = new Room(roomPosition, height, width, this.height, this.width);
+            potentialRoomPositions.sort((a, b) => a.cost - b.cost);
+            potentialRoomPositions = potentialRoomPositions.filter((x) => x.cost <= potentialRoomPositions[0].cost);
+
+            let roomPosition = potentialRoomPositions[Math.floor(Math.random() * potentialRoomPositions.length)];
+            let room = new Room(roomPosition.position, height, width, this.height, this.width);
 
             console.log(
-                `Room ${index} is being generated with upper left corner at (${room.topLeftCorner.x},${room.topLeftCorner.y}, it is ${room.width} tiles wide and ${room.height} tiles tall. Center is at about ${room.center.x}, ${room.center.y} `
+                `Room ${index} is being generated with upper left corner at (${room.topLeftCorner.x},${room.topLeftCorner.y}), it is ${room.width} tiles wide and ${room.height} tiles tall. Center is at about ${room.center.x}, ${room.center.y} `
             );
             this.#assignArea(room.topLeftCorner, room.bottomRightCorner, new Tile(Maze.opacity.open, Maze.tileTypes.room));
 
             this.#assignPosition(room.center, new Tile(Maze.opacity.open, Maze.tileTypes.roomCenter));
 
-            if (includeHallways && index > 0) {
-                this.generateHallway(this.rooms[index - 1].center, room.center, Maze.hallwayTypes.meandering);
-            }
-
             this.rooms.push(room);
         }
+        if (includeHallways) {
+            this.rooms
+                .filter((x) => !x.connected)
+                .map((room) => {
+                    //avoid room if it is already connected
+                    if (!room.connected) {
+                        let potentialRoomCenters = [];
+                        this.rooms.map((otherRoom) => {
+                            let distance = Math.sqrt(Math.pow(room.center.x - otherRoom.center.x, 2) + Math.pow(room.center.y - otherRoom.center.y, 2));
+                            //Don't link to yourself, dummy
+                            if (distance > 0) {
+                                potentialRoomCenters.push({ distance: distance, otherRoom: otherRoom });
+                            }
+                        });
+                        if (potentialRoomCenters.length) {
+                            let closestOtherRoom = potentialRoomCenters.sort((a, b) => a.distance - b.distance)[0].otherRoom;
+                            closestOtherRoom.connected = true;
+                            room.connected = true;
+                            this.generateHallway(room.center, closestOtherRoom.center, Maze.hallwayTypes.direct);
+                        }
+                    }
+                });
+        }
     }
-
+    /**
+     * Generates start and goal positions
+     */
     generateStartAndGoal() {
         this.start = this.#getRandomPositionWithinBounds();
         this.goal = this.#getRandomPositionWithinBounds();
