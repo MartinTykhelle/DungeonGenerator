@@ -536,27 +536,25 @@ export class Maze {
             this.rooms.push(room);
         }
         if (includeHallways) {
-            this.rooms
-                .filter((x) => !x.connected)
-                .map((room) => {
-                    //avoid room if it is already connected
-                    if (!room.connected) {
-                        let potentialRoomCenters = [];
-                        this.rooms.map((otherRoom) => {
-                            let distance = Math.sqrt(Math.pow(room.center.x - otherRoom.center.x, 2) + Math.pow(room.center.y - otherRoom.center.y, 2));
-                            //Don't link to yourself, dummy
-                            if (distance > 0) {
-                                potentialRoomCenters.push({ distance: distance, otherRoom: otherRoom });
-                            }
-                        });
-                        if (potentialRoomCenters.length) {
-                            let closestOtherRoom = potentialRoomCenters.sort((a, b) => a.distance - b.distance)[0].otherRoom;
-                            closestOtherRoom.connected = true;
-                            room.connected = true;
-                            this.generateHallway(room.center, closestOtherRoom.center, Maze.hallwayTypes.direct);
+            this.rooms.map((room) => {
+                //avoid room if it is already connected
+                if (!room.connected) {
+                    let potentialRoomCenters = [];
+                    this.rooms.map((otherRoom) => {
+                        let distance = Math.sqrt(Math.pow(room.center.x - otherRoom.center.x, 2) + Math.pow(room.center.y - otherRoom.center.y, 2));
+                        //Don't link to yourself, dummy
+                        if (distance > 0) {
+                            potentialRoomCenters.push({ distance: distance, otherRoom: otherRoom });
                         }
+                    });
+                    if (potentialRoomCenters.length) {
+                        let closestOtherRoom = potentialRoomCenters.sort((a, b) => a.distance - b.distance)[0].otherRoom;
+                        closestOtherRoom.connected = true;
+                        room.connected = true;
+                        this.generateHallway(room.center, closestOtherRoom.center, Maze.hallwayTypes.direct);
                     }
-                });
+                }
+            });
         }
     }
     /**
