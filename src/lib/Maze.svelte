@@ -4,17 +4,19 @@
     import Tile from './Tile.svelte';
     import { Maze } from './mazegen.js';
     let mazeObject = new Maze(20, 60);
+    async function resetMaze() {
+        let mazeSize = { height: mazeObject.height, width: mazeObject.width };
+        mazeObject = new Maze(mazeSize.height, mazeSize.width);
+    }
     async function addRoom() {
-        mazeObject.generateRooms(1);
+        mazeObject.generateRooms(4);
         mazeObject = mazeObject;
     }
-    //   mazeObject.generateStartAndGoal();
-    /*mazeObject.generateHallway(
-        mazeObject.start,
-        mazeObject.goal,
-        Maze.hallwayTypes.meandering,
-    );
-*/
+    async function generateHallway() {
+        mazeObject.generateStartAndGoal();
+        mazeObject.generateHallway(mazeObject.start, mazeObject.goal, Maze.hallwayTypes.meandering);
+        mazeObject = mazeObject;
+    }
     //console.log(mazeObject.maze);
     //console.log(mazeObject.rooms);
 </script>
@@ -29,6 +31,8 @@
     </div>
 {/if}
 <button on:click={addRoom}> Add Rooms! </button>
+<button on:click={generateHallway}> Add Hallway! </button>
+<button on:click={resetMaze}> Reset</button>
 
 <style>
     .grid-container {
