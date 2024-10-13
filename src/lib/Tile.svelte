@@ -3,7 +3,7 @@
 
     export let tile = new Tile();
 
-    let displayCost = false;
+    let displayCost = true;
     let displayPath = false;
     export let x = 0;
     export let y = 0;
