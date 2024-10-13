@@ -3,14 +3,14 @@
 
     import Tile from './Tile.svelte';
     import { Maze } from './mazegen.js';
-    let mazeObject = new Maze(100, 100);
+    let mazeObject = new Maze(35, 80);
     let costs;
     async function resetMaze() {
         let mazeSize = { height: mazeObject.height, width: mazeObject.width };
         mazeObject = new Maze(mazeSize.height, mazeSize.width);
     }
     async function addRoom() {
-        mazeObject.generateRooms(4);
+        mazeObject.generateRooms(1);
         mazeObject = mazeObject;
     }
     async function generateHallway() {

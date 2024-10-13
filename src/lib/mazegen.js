@@ -29,7 +29,8 @@ class Room {
         this.center = new Position(Math.floor(topLeftCorner.x + height / 2), Math.floor(topLeftCorner.y + width / 2));
         this.bottomRightCorner = new Position(topLeftCorner.x + height, topLeftCorner.y + width);
         this.badness = 0;
-        this.connected = false;
+        this.connectedTo = [];
+        this.sortOrder = 0;
     }
 }
 export class Tile {
@@ -532,24 +533,32 @@ export class Maze {
         }
         if (includeHallways) {
             this.rooms.map((room) => {
-                //avoid room if it is already connected
-                if (!room.connected) {
-                    let potentialRoomCenters = [];
-                    this.rooms.map((otherRoom) => {
-                        let distance = Maze.getDistance(room.center, otherRoom.center);
-                        //Don't link to yourself, dummy
-                        if (distance > 0) {
-                            potentialRoomCenters.push({ distance: distance, otherRoom: otherRoom });
-                        }
-                    });
-                    if (potentialRoomCenters.length) {
-                        let closestOtherRoom = potentialRoomCenters.sort((a, b) => a.distance - b.distance)[0].otherRoom;
-                        closestOtherRoom.connected = true;
-                        room.connected = true;
-                        this.generateHallway(room.center, closestOtherRoom.center, Maze.hallwayTypes.direct);
-                    }
-                }
+                room.sortOrder = Maze.getDistance(room.center, new Position(0, 0));
             });
+            this.rooms = this.rooms.sort((a, b) => a.sortOrder - b.sortOrder);
+            for (let roomIndex = 1; roomIndex < this.rooms.length; roomIndex++) {
+                if (!this.rooms[roomIndex - 1].connected) {
+                    this.rooms[roomIndex - 1].connected = true;
+                    this.generateHallway(this.rooms[roomIndex - 1].center, this.rooms[roomIndex].center, Maze.hallwayTypes.direct);
+                }
+            }
+            /*
+            this.rooms.map((room) => {
+                let potentialRoomCenters = [];
+                this.rooms.map((otherRoom) => {
+                    let distance = Maze.getDistance(room.center, otherRoom.center);
+                    //Don't link to yourself, dummy
+                    if (distance > 0 && room.connectedTo.indexOf(otherRoom.center) < 0) {
+                        potentialRoomCenters.push({ distance: distance, otherRoom: otherRoom });
+                    }
+                });
+                if (potentialRoomCenters.length) {
+                    let closestOtherRoom = potentialRoomCenters.sort((a, b) => a.distance - b.distance)[0].otherRoom;
+                    closestOtherRoom.connectedTo.push(room.center);
+                    room.connectedTo.push(closestOtherRoom.center);
+                    this.generateHallway(room.center, closestOtherRoom.center, Maze.hallwayTypes.direct);
+                }
+            });*/
         }
     }
 
