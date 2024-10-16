@@ -31,9 +31,6 @@
     <button on:click={addRoom}> Add Rooms! </button>
     <button on:click={generateHallway}> Add Hallway! </button>
     <button on:click={resetMaze}> Reset</button>
-    <button on:click={test1}> Test 1 </button>
-    <button on:click={test2}> Test 2 </button>
-    <button on:click={test3}> Test 3 </button>
 {/if}
 
 <style>
