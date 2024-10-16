@@ -18,19 +18,6 @@
         mazeObject.generateHallway(mazeObject.start, mazeObject.goal, Maze.hallwayTypes.direct);
         mazeObject = mazeObject;
     }
-    async function test1() {
-        costs = mazeObject.test1();
-        mazeObject = mazeObject;
-    }
-    async function test2() {
-        mazeObject.test2(costs);
-        mazeObject = mazeObject;
-    }
-    async function test3() {
-        console.log(JSON.stringify(mazeObject.maze, 2));
-    }
-    //console.log(mazeObject.maze);
-    //console.log(mazeObject.rooms);
 </script>
 
 {#if mazeObject.maze}
