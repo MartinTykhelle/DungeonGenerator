@@ -251,7 +251,7 @@ export class Maze {
                     costs[x][y] += 1;
                 }
                 if (this.maze[x][y].type === Maze.tileTypes.hallway) {
-                    costs[x][y] += 1;
+                    costs[x][y] += -1;
                 }
             }
         }
@@ -271,7 +271,7 @@ export class Maze {
                     costs[x][y] += 3;
                 }
                 if (this.maze[x][y].type === Maze.tileTypes.hallway) {
-                    costs[x][y] += -1;
+                    costs[x][y] += 1;
                 }
                 if (this.maze[x][y].type === Maze.tileTypes.roomCenter) {
                     costs[x][y] += 10;
@@ -301,12 +301,15 @@ export class Maze {
                         if (kernelType === Maze.kernelTypes.center) {
                             signalX = signalX - kernelCenter.x;
                             signalY = signalY - kernelCenter.y;
+                        } else {
+                            signalX = signalX - 1;
+                            signalY = signalY - 1;
                         }
 
                         if (signalX >= 0 && signalX < costs.length && signalY >= 0 && signalY < costs[0].length) {
                             convolutedCosts[x][y] += costs[signalX][signalY] * kernel[kx][ky];
 
-                            //this.maze[x][y].cost = convolutedCosts[x][y];
+                            this.maze[x][y].cost = convolutedCosts[x][y];
                         }
                     }
                 }
@@ -500,10 +503,10 @@ export class Maze {
             let width = Maze.getRandomInteger(minRoomSize, maxRoomSize);
 
             //Make a kernel the size of the room
-            for (let x = 0; x < height; x++) {
+            for (let x = 0; x < height + 2; x++) {
                 roomKernel.push([]);
-                for (let y = 0; y < width; y++) {
-                    roomKernel[x][y] = 2;
+                for (let y = 0; y < width + 2; y++) {
+                    roomKernel[x][y] = 1;
                 }
             }
             roomCosts = this.#calculateCostsKernel(roomCosts, roomKernel);
@@ -595,12 +598,6 @@ export class Maze {
         for (let x = 0; x < costs.length; x++) {
             for (let y = 0; y < costs[0].length; y++) {
                 costs[x][y] = costs[x][y] + distances[x][y];
-            }
-        }
-
-        for (let x = 0; x < costs.length; x++) {
-            for (let y = 0; y < costs[0].length; y++) {
-                this.maze[x][y].cost = costs[x][y];
             }
         }
 
