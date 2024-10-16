@@ -80,10 +80,24 @@ export class Maze {
     static getRandomInteger(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-
+    /**
+     * Gets linear distance between two points.
+     * (1,1) to (0,0) will be sqrt(2)
+     * @param {Position} posA first position
+     * @param {Position} posB Second position
+     * @returns {number} Distance between points
+     */
     static getDistance(posA, posB) {
         return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
     }
+
+    /**
+     * Gets taxicab distance between two points
+     * (1,1) to (0,0) will be two as it takes two moves to get there
+     * @param {Position} posA first position
+     * @param {Position} posB Second position
+     * @returns {number} Distance between points
+     */
     static getRectilinearDistance(posA, posB) {
         return Math.abs(posA.x - posB.x) + Math.abs(posA.y - posB.y);
     }
@@ -228,7 +242,12 @@ export class Maze {
 
         return costs;
     }
-
+    /**
+     * Calcualtes matrix of distances to goal
+     * @param {Position} goal Goal position
+     * @param {Function} distanceFunction function to use for distance calculation
+     * @returns {Array<Array>} Array of arrays
+     */
     #calculateDistanceMatrix(goal, distanceFunction = Maze.getRectilinearDistance) {
         let costs = Array(this.height)
             .fill(0)
@@ -240,7 +259,10 @@ export class Maze {
         }
         return costs;
     }
-
+    /**
+     * Calculates matrix of hallway costs
+     * @returns {Array<Array>} Cost to generate hallways
+     */
     #calculateHallwayCosts() {
         let costs = Array(this.height)
             .fill(0)
@@ -257,7 +279,10 @@ export class Maze {
         }
         return costs;
     }
-
+    /**
+     * Calculates matrix of room costs
+     * @returns {Array<Array>} Cost to generate rooms
+     */
     #calculateRoomCosts() {
         let costs = Array(this.height)
             .fill(0)
@@ -281,6 +306,15 @@ export class Maze {
         return costs;
     }
 
+    /**
+     * Convolutes kernel on costs
+     * @param {Array<Array>} costs Cost matrix
+     * @param {Array<Array>} kernel Kernel for convolution
+     * @param {string} kernelType Maze.kernelType, topLeft uses the topLeft corner as "center"
+     * @param {number} buffer If this is greater than 0, a number of cells are added to the outside of the kernel
+     * @param {number} bufferValue This is the value of the cells added to the outside of the kernel
+     * @returns {Array<Array>} Cost matrix
+     */
     #calculateCostsKernel(costs, kernel, kernelType = Maze.kernelTypes.topLeft, buffer = 0, bufferValue = 1) {
         let convolutedCosts = Array(this.height)
             .fill(0)
@@ -397,7 +431,10 @@ export class Maze {
         }
         return path;
     }
-
+    /**
+     * Assigns a path to hallway
+     * @param {Array<Position>} path Path found in various functions
+     */
     #assignPath(path) {
         for (let index = 1; index < path.length - 1; index++) {
             this.#assignPosition(path[index], new Tile(Maze.opacity.open, Maze.tileTypes.hallway));
