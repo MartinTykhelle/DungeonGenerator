@@ -1,10 +1,9 @@
 <script>
-    import { Tile } from './mazegen.js';
+    import { Tile } from './dungeonGen.js';
 
-    import { Tooltip } from '@svelte-plugins/tooltips';
     export let tile = new Tile();
 
-    let displayCost = true;
+    let displayCost = false;
     let displayPath = false;
     export let x = 0;
     export let y = 0;
@@ -15,19 +14,17 @@
         */
 </script>
 
-<Tooltip content="{x},{y}" position="top">
-    <div class="grid-element {tile.opacity}">
-        {#if displayCost && !isNaN(tile.cost)}
-            {tile.cost}
-        {:else if tile.type === 'start'}
-            S
-        {:else if tile.type === 'goal'}
-            G
-        {:else if tile.type === 'roomCenter'}
-            C
-        {/if}
-    </div>
-</Tooltip>
+<div class="grid-element {tile.opacity}" title="{x},{y} cost ={tile.cost}">
+    {#if tile.type === 'goal'}
+        G
+    {:else if tile.type === 'start'}
+        S
+    {:else if displayCost && !isNaN(tile.cost)}
+        {tile.cost}
+    {:else if tile.type === 'roomCenter'}
+        C
+    {/if}
+</div>
 
 <style>
     .grid-element {

@@ -2,27 +2,27 @@
     // @ts-nocheck
 
     import Tile from './Tile.svelte';
-    import { Maze } from './mazegen.js';
-    let mazeObject = new Maze(35, 80);
+    import { Dungeon } from './dungeonGen.js';
+    let dungeonObject = new Dungeon(35, 80);
     let costs;
-    async function resetMaze() {
-        let mazeSize = { height: mazeObject.height, width: mazeObject.width };
-        mazeObject = new Maze(mazeSize.height, mazeSize.width);
+    async function resetDungeon() {
+        let dungeonSize = { height: dungeonObject.height, width: dungeonObject.width };
+        dungeonObject = new Dungeon(dungeonSize.height, dungeonSize.width);
     }
     async function addRoom() {
-        mazeObject.generateRooms(1);
-        mazeObject = mazeObject;
+        dungeonObject.generateRooms(1);
+        dungeonObject = dungeonObject;
     }
     async function generateHallway() {
-        mazeObject.generateStartAndGoal();
-        mazeObject.generateHallway(mazeObject.start, mazeObject.goal, Maze.hallwayTypes.direct);
-        mazeObject = mazeObject;
+        dungeonObject.generateStartAndGoal();
+        dungeonObject.generateHallway(dungeonObject.start, dungeonObject.goal, Dungeon.hallwayTypes.direct);
+        dungeonObject = dungeonObject;
     }
 </script>
 
-{#if mazeObject.maze}
-    <div class="grid-container" style="grid-template-columns: repeat({mazeObject.maze[0].length}, 1fr);">
-        {#each mazeObject.maze as row, x}
+{#if dungeonObject.dungeon}
+    <div class="grid-container" style="grid-template-columns: repeat({dungeonObject.dungeon[0].length}, 1fr);">
+        {#each dungeonObject.dungeon as row, x}
             {#each row as tile, y}
                 <Tile {tile} {x} {y}></Tile>
             {/each}
@@ -30,7 +30,7 @@
     </div>
     <button on:click={addRoom}> Add Rooms! </button>
     <button on:click={generateHallway}> Add Hallway! </button>
-    <button on:click={resetMaze}> Reset</button>
+    <button on:click={resetDungeon}> Reset</button>
 {/if}
 
 <style>
