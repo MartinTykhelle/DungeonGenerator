@@ -91,6 +91,12 @@ export class Maze {
         return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
     }
 
+    static getDistance(posA, posB) {
+        return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
+    }
+    static getRectilinearDistance(posA, posB) {
+        return Math.abs(posA.x - posB.x) + Math.abs(posA.y - posB.y);
+    }
     /**
      * Gets taxicab distance between two points
      * (1,1) to (0,0) will be two as it takes two moves to get there
@@ -248,6 +254,7 @@ export class Maze {
      * @param {Function} distanceFunction function to use for distance calculation
      * @returns {Array<Array>} Array of arrays
      */
+
     #calculateDistanceMatrix(goal, distanceFunction = Maze.getRectilinearDistance) {
         let costs = Array(this.height)
             .fill(0)
@@ -274,6 +281,8 @@ export class Maze {
                 }
                 if (this.maze[x][y].type === Maze.tileTypes.hallway) {
                     costs[x][y] += -1;
+
+                    costs[x][y] += 1;
                 }
             }
         }
@@ -316,6 +325,7 @@ export class Maze {
      * @returns {Array<Array>} Cost matrix
      */
     #calculateCostsKernel(costs, kernel, kernelType = Maze.kernelTypes.topLeft, buffer = 0, bufferValue = 1) {
+
         let convolutedCosts = Array(this.height)
             .fill(0)
             .map(() => Array(this.width).fill(0));
@@ -338,6 +348,7 @@ export class Maze {
         }
         console.log(kernel);
 
+
         //What follows is convolutionesque, the kernel will be the room and the "center" is the top left position
         //Each point in the cost matrix will be calculated based on this room size
         for (let x = 0; x < costs.length; x++) {
@@ -352,12 +363,12 @@ export class Maze {
                         } else {
                             signalX = signalX - buffer;
                             signalY = signalY - buffer;
+
                         }
 
                         if (signalX >= 0 && signalX < costs.length && signalY >= 0 && signalY < costs[0].length) {
                             convolutedCosts[x][y] += costs[signalX][signalY] * kernel[kx][ky];
 
-                            this.maze[x][y].cost = convolutedCosts[x][y];
                         }
                     }
                 }
@@ -430,6 +441,12 @@ export class Maze {
             }
         }
         return path;
+    }
+
+    #assignPath(path) {
+        for (let index = 1; index < path.length - 1; index++) {
+            this.#assignPosition(path[index], new Tile(Maze.opacity.open, Maze.tileTypes.hallway));
+        }
     }
     /**
      * Assigns a path to hallway
