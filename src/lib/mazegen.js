@@ -281,14 +281,28 @@ export class Maze {
         return costs;
     }
 
-    #calculateCostsKernel(costs, kernel, kernelType = Maze.kernelTypes.topLeft) {
+    #calculateCostsKernel(costs, kernel, kernelType = Maze.kernelTypes.topLeft, buffer = 0, bufferValue = 1) {
         let convolutedCosts = Array(this.height)
             .fill(0)
             .map(() => Array(this.width).fill(0));
         let kernelCenter;
+
         if (kernelType === Maze.kernelTypes.center && kernel.length === kernel[0].length && kernel.length % 2) {
             kernelCenter = { x: Math.floor(kernel.length / 2), y: Math.floor(kernel[0].length / 2) };
         }
+
+        // pad kernel
+        if (buffer > 0) {
+            let bufferArray = Array(buffer).fill(bufferValue);
+            for (let index = 0; index < kernel.length; index++) {
+                kernel[index].unshift(...bufferArray);
+                kernel[index].push(...bufferArray);
+            }
+            bufferArray = Array(kernel[0].length).fill(bufferValue);
+            kernel.unshift(bufferArray);
+            kernel.push(bufferArray);
+        }
+        console.log(kernel);
 
         //What follows is convolutionesque, the kernel will be the room and the "center" is the top left position
         //Each point in the cost matrix will be calculated based on this room size
@@ -302,8 +316,8 @@ export class Maze {
                             signalX = signalX - kernelCenter.x;
                             signalY = signalY - kernelCenter.y;
                         } else {
-                            signalX = signalX - 1;
-                            signalY = signalY - 1;
+                            signalX = signalX - buffer;
+                            signalY = signalY - buffer;
                         }
 
                         if (signalX >= 0 && signalX < costs.length && signalY >= 0 && signalY < costs[0].length) {
@@ -315,8 +329,6 @@ export class Maze {
                 }
             }
         }
-        //normalize costs
-
         return convolutedCosts;
     }
 
@@ -503,13 +515,13 @@ export class Maze {
             let width = Maze.getRandomInteger(minRoomSize, maxRoomSize);
 
             //Make a kernel the size of the room
-            for (let x = 0; x < height + 2; x++) {
+            for (let x = 0; x < height; x++) {
                 roomKernel.push([]);
-                for (let y = 0; y < width + 2; y++) {
+                for (let y = 0; y < width; y++) {
                     roomKernel[x][y] = 1;
                 }
             }
-            roomCosts = this.#calculateCostsKernel(roomCosts, roomKernel);
+            roomCosts = this.#calculateCostsKernel(roomCosts, roomKernel, Maze.kernelTypes.topLeft, 1, 1);
 
             let potentialRoomPositions = [];
 
@@ -545,23 +557,6 @@ export class Maze {
                     this.generateHallway(this.rooms[roomIndex - 1].center, this.rooms[roomIndex].center, Maze.hallwayTypes.direct);
                 }
             }
-            /*
-            this.rooms.map((room) => {
-                let potentialRoomCenters = [];
-                this.rooms.map((otherRoom) => {
-                    let distance = Maze.getDistance(room.center, otherRoom.center);
-                    //Don't link to yourself, dummy
-                    if (distance > 0 && room.connectedTo.indexOf(otherRoom.center) < 0) {
-                        potentialRoomCenters.push({ distance: distance, otherRoom: otherRoom });
-                    }
-                });
-                if (potentialRoomCenters.length) {
-                    let closestOtherRoom = potentialRoomCenters.sort((a, b) => a.distance - b.distance)[0].otherRoom;
-                    closestOtherRoom.connectedTo.push(room.center);
-                    room.connectedTo.push(closestOtherRoom.center);
-                    this.generateHallway(room.center, closestOtherRoom.center, Maze.hallwayTypes.direct);
-                }
-            });*/
         }
     }
 
