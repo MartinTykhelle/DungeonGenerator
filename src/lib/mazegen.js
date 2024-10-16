@@ -80,10 +80,30 @@ export class Maze {
     static getRandomInteger(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
+    /**
+     * Gets linear distance between two points.
+     * (1,1) to (0,0) will be sqrt(2)
+     * @param {Position} posA first position
+     * @param {Position} posB Second position
+     * @returns {number} Distance between points
+     */
+    static getDistance(posA, posB) {
+        return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
+    }
 
     static getDistance(posA, posB) {
         return Math.sqrt(Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2));
     }
+    static getRectilinearDistance(posA, posB) {
+        return Math.abs(posA.x - posB.x) + Math.abs(posA.y - posB.y);
+    }
+    /**
+     * Gets taxicab distance between two points
+     * (1,1) to (0,0) will be two as it takes two moves to get there
+     * @param {Position} posA first position
+     * @param {Position} posB Second position
+     * @returns {number} Distance between points
+     */
     static getRectilinearDistance(posA, posB) {
         return Math.abs(posA.x - posB.x) + Math.abs(posA.y - posB.y);
     }
@@ -228,6 +248,12 @@ export class Maze {
 
         return costs;
     }
+    /**
+     * Calcualtes matrix of distances to goal
+     * @param {Position} goal Goal position
+     * @param {Function} distanceFunction function to use for distance calculation
+     * @returns {Array<Array>} Array of arrays
+     */
 
     #calculateDistanceMatrix(goal, distanceFunction = Maze.getRectilinearDistance) {
         let costs = Array(this.height)
@@ -240,7 +266,10 @@ export class Maze {
         }
         return costs;
     }
-
+    /**
+     * Calculates matrix of hallway costs
+     * @returns {Array<Array>} Cost to generate hallways
+     */
     #calculateHallwayCosts() {
         let costs = Array(this.height)
             .fill(0)
@@ -251,13 +280,18 @@ export class Maze {
                     costs[x][y] += 1;
                 }
                 if (this.maze[x][y].type === Maze.tileTypes.hallway) {
+                    costs[x][y] += -1;
+
                     costs[x][y] += 1;
                 }
             }
         }
         return costs;
     }
-
+    /**
+     * Calculates matrix of room costs
+     * @returns {Array<Array>} Cost to generate rooms
+     */
     #calculateRoomCosts() {
         let costs = Array(this.height)
             .fill(0)
@@ -271,7 +305,7 @@ export class Maze {
                     costs[x][y] += 3;
                 }
                 if (this.maze[x][y].type === Maze.tileTypes.hallway) {
-                    costs[x][y] += -1;
+                    costs[x][y] += 1;
                 }
                 if (this.maze[x][y].type === Maze.tileTypes.roomCenter) {
                     costs[x][y] += 10;
@@ -281,14 +315,39 @@ export class Maze {
         return costs;
     }
 
-    #calculateCostsKernel(costs, kernel, kernelType = Maze.kernelTypes.topLeft) {
+    /**
+     * Convolutes kernel on costs
+     * @param {Array<Array>} costs Cost matrix
+     * @param {Array<Array>} kernel Kernel for convolution
+     * @param {string} kernelType Maze.kernelType, topLeft uses the topLeft corner as "center"
+     * @param {number} buffer If this is greater than 0, a number of cells are added to the outside of the kernel
+     * @param {number} bufferValue This is the value of the cells added to the outside of the kernel
+     * @returns {Array<Array>} Cost matrix
+     */
+    #calculateCostsKernel(costs, kernel, kernelType = Maze.kernelTypes.topLeft, buffer = 0, bufferValue = 1) {
+
         let convolutedCosts = Array(this.height)
             .fill(0)
             .map(() => Array(this.width).fill(0));
         let kernelCenter;
+
         if (kernelType === Maze.kernelTypes.center && kernel.length === kernel[0].length && kernel.length % 2) {
             kernelCenter = { x: Math.floor(kernel.length / 2), y: Math.floor(kernel[0].length / 2) };
         }
+
+        // pad kernel
+        if (buffer > 0) {
+            let bufferArray = Array(buffer).fill(bufferValue);
+            for (let index = 0; index < kernel.length; index++) {
+                kernel[index].unshift(...bufferArray);
+                kernel[index].push(...bufferArray);
+            }
+            bufferArray = Array(kernel[0].length).fill(bufferValue);
+            kernel.unshift(bufferArray);
+            kernel.push(bufferArray);
+        }
+        console.log(kernel);
+
 
         //What follows is convolutionesque, the kernel will be the room and the "center" is the top left position
         //Each point in the cost matrix will be calculated based on this room size
@@ -301,19 +360,20 @@ export class Maze {
                         if (kernelType === Maze.kernelTypes.center) {
                             signalX = signalX - kernelCenter.x;
                             signalY = signalY - kernelCenter.y;
+                        } else {
+                            signalX = signalX - buffer;
+                            signalY = signalY - buffer;
+
                         }
 
                         if (signalX >= 0 && signalX < costs.length && signalY >= 0 && signalY < costs[0].length) {
                             convolutedCosts[x][y] += costs[signalX][signalY] * kernel[kx][ky];
 
-                            //this.maze[x][y].cost = convolutedCosts[x][y];
                         }
                     }
                 }
             }
         }
-        //normalize costs
-
         return convolutedCosts;
     }
 
@@ -383,6 +443,15 @@ export class Maze {
         return path;
     }
 
+    #assignPath(path) {
+        for (let index = 1; index < path.length - 1; index++) {
+            this.#assignPosition(path[index], new Tile(Maze.opacity.open, Maze.tileTypes.hallway));
+        }
+    }
+    /**
+     * Assigns a path to hallway
+     * @param {Array<Position>} path Path found in various functions
+     */
     #assignPath(path) {
         for (let index = 1; index < path.length - 1; index++) {
             this.#assignPosition(path[index], new Tile(Maze.opacity.open, Maze.tileTypes.hallway));
@@ -503,10 +572,10 @@ export class Maze {
             for (let x = 0; x < height; x++) {
                 roomKernel.push([]);
                 for (let y = 0; y < width; y++) {
-                    roomKernel[x][y] = 2;
+                    roomKernel[x][y] = 1;
                 }
             }
-            roomCosts = this.#calculateCostsKernel(roomCosts, roomKernel);
+            roomCosts = this.#calculateCostsKernel(roomCosts, roomKernel, Maze.kernelTypes.topLeft, 1, 1);
 
             let potentialRoomPositions = [];
 
@@ -542,23 +611,6 @@ export class Maze {
                     this.generateHallway(this.rooms[roomIndex - 1].center, this.rooms[roomIndex].center, Maze.hallwayTypes.direct);
                 }
             }
-            /*
-            this.rooms.map((room) => {
-                let potentialRoomCenters = [];
-                this.rooms.map((otherRoom) => {
-                    let distance = Maze.getDistance(room.center, otherRoom.center);
-                    //Don't link to yourself, dummy
-                    if (distance > 0 && room.connectedTo.indexOf(otherRoom.center) < 0) {
-                        potentialRoomCenters.push({ distance: distance, otherRoom: otherRoom });
-                    }
-                });
-                if (potentialRoomCenters.length) {
-                    let closestOtherRoom = potentialRoomCenters.sort((a, b) => a.distance - b.distance)[0].otherRoom;
-                    closestOtherRoom.connectedTo.push(room.center);
-                    room.connectedTo.push(closestOtherRoom.center);
-                    this.generateHallway(room.center, closestOtherRoom.center, Maze.hallwayTypes.direct);
-                }
-            });*/
         }
     }
 
@@ -595,12 +647,6 @@ export class Maze {
         for (let x = 0; x < costs.length; x++) {
             for (let y = 0; y < costs[0].length; y++) {
                 costs[x][y] = costs[x][y] + distances[x][y];
-            }
-        }
-
-        for (let x = 0; x < costs.length; x++) {
-            for (let y = 0; y < costs[0].length; y++) {
-                this.maze[x][y].cost = costs[x][y];
             }
         }
 

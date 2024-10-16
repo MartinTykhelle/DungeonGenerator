@@ -26,6 +26,9 @@
         mazeObject.test2(costs);
         mazeObject = mazeObject;
     }
+    async function test3() {
+        console.log(JSON.stringify(mazeObject.maze, 2));
+    }
     //console.log(mazeObject.maze);
     //console.log(mazeObject.rooms);
 </script>
@@ -44,6 +47,7 @@
 <button on:click={resetMaze}> Reset</button>
 <button on:click={test1}> Test 1 </button>
 <button on:click={test2}> Test 2 </button>
+<button on:click={test3}> Test 3 </button>
 
 <style>
     .grid-container {
