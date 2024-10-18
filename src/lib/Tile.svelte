@@ -4,6 +4,7 @@
     export let tile = new Tile();
 
     let displayCost = false;
+    let displayCost = false;
     let displayPath = false;
     export let dungeonCrawl;
 </script>
