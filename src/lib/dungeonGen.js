@@ -1,4 +1,4 @@
-class Position {
+export class Position {
     /**
      * Position
      * 0,0 is the top left corner
@@ -10,6 +10,12 @@ class Position {
     constructor(x, y) {
         this.x = x;
         this.y = y;
+    }
+}
+export class TileActivity {
+    constructor(activity, rotation) {
+        this.activity = activity ?? 'none';
+        this.rotation = rotation ?? 0;
     }
 }
 
@@ -43,6 +49,9 @@ export class Tile {
         this.opacity = opacity;
         this.type = type || Dungeon.tileTypes.none;
         this.cost = 0;
+        this.x = 0;
+        this.y = 0;
+        this.tileActivity = new TileActivity();
     }
 }
 export class Dungeon {
@@ -141,7 +150,7 @@ export class Dungeon {
         neighbours.push(new Position(position.x, position.y - 1));
 
         neighbours = neighbours.filter((neighbour) => {
-            return this.#isPositionWithinBounds(neighbour);
+            return this.isPositionWithinBounds(neighbour);
         });
         return neighbours;
     }
@@ -354,7 +363,7 @@ export class Dungeon {
      * @param {Position} position Position to check
      * @returns {boolean} True if within bounds
      */
-    #isPositionWithinBounds(position) {
+    isPositionWithinBounds(position) {
         return this.#isWithinBounds(position.x, position.y);
     }
 
@@ -391,6 +400,9 @@ export class Dungeon {
             if (this.dungeon[position.x][position.y].cost > 0 && tile.cost == 0) {
                 tile.cost = this.dungeon[position.x][position.y].cost;
             }
+            //this makes it easier to find positions.
+            tile.x = position.x;
+            tile.y = position.y;
             this.dungeon[position.x][position.y] = tile;
         }
     }
@@ -561,5 +573,28 @@ export class Dungeon {
                 this.#assignPath(path);
             }
         }
+    }
+    getSubArea(position, size) {
+        if (size % 2 === 0) {
+            throw new Error('size must be an odd number');
+        }
+        let subArea = Array(size)
+            .fill(0)
+            .map(() => Array(size).fill(0));
+
+        let sideDistance = Math.floor(size / 2);
+        let topLeft = new Position(position.x - sideDistance, position.y - sideDistance);
+        console.log(sideDistance, position, topLeft);
+        for (let x = 0; x < size; x++) {
+            for (let y = 0; y < size; y++) {
+                let currentPos = new Position(topLeft.x + x, topLeft.y + y);
+                if (this.isPositionWithinBounds(currentPos)) {
+                    subArea[x][y] = this.dungeon[currentPos.x][currentPos.y];
+                } else {
+                    subArea[x][y] = new Tile(Dungeon.opacity.closed);
+                }
+            }
+        }
+        return subArea;
     }
 }
